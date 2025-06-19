@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string></string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>app-1-1013426621885-ios-ae3a3733c89ca7ef3c16d4</string>
+			</array>
+		</dict>
+	</array>
+	<key>FirebaseMessagingAutoInitEnabled</key>
+	<string>true</string>
+	<key>GIDClientID</key>
+	<string>1013426621885-sve8aagqs4d043f328v6d9rahlasv69c.apps.googleusercontent.com</string>
+	<key>LSEnvironment</key>
+	<dict/>
+</dict>
+</plist>

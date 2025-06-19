@@ -6,3 +6,16 @@
 //
 
 import Foundation
+import SwiftUI
+
+struct HomeView: View {
+    let selectedAccount: String
+
+    var body: some View {
+        VStack {
+            Text("Добро пожаловать")
+                .font(.title)
+            Text("Лицевой счёт: \(selectedAccount)")
+        }
+    }
+}

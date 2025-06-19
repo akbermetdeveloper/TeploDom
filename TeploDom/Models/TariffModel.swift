@@ -6,3 +6,9 @@
 //
 
 import Foundation
+import FirebaseFirestoreSwift
+
+struct Tariff: Identifiable, Codable {
+    @DocumentID var id: String?
+    var pricePerUnit: Double
+}

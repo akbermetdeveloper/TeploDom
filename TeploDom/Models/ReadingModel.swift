@@ -6,3 +6,11 @@
 //
 
 import Foundation
+import FirebaseFirestoreSwift
+
+struct Reading: Identifiable, Codable {
+    @DocumentID var id: String?
+    var date: Date
+    var meterId: String
+    var value: Double
+}
