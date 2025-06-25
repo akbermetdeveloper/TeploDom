@@ -20,101 +20,113 @@ struct MetersView: View {
     
     var body: some View {
         NavigationStack {
-     
-            VStack {
-                
-                if viewModel.meters.isEmpty {
-                    Text("Нет счетчиков")
-                        .foregroundColor(.secondary)
-                        .padding()
-                } else {
-                    List {
-                        ForEach(viewModel.meters) { meter in
-                            HStack {
-                                VStack(alignment: .leading) {
-                                    Text(meter.location)
-                                        .font(.headline)
-                                    Text("Серийный номер: \(meter.serialNumber)")
-                                        .font(.subheadline)
-                                        .foregroundColor(.secondary)
+            
+            ZStack {
+                BackgroundView()
+                VStack {
+                    
+                    if viewModel.meters.isEmpty {
+                        Text("Нет счетчиков")
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding()
+                    } else {
+                        List {
+                            ForEach(viewModel.meters) { meter in
+                                HStack {
+                                    VStack(alignment: .leading) {
+                                        Text(meter.location)
+                                            .font(.headline)
+                                        Text("Серийный номер: \(meter.serialNumber)")
+                                            .font(.subheadline)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    Spacer()
+                                    Button {
+                                        viewModel.editMeter(meter)
+                                        serialNumber = meter.serialNumber
+                                        location = meter.location
+                                        isInputActive = true
+                                    } label: {
+                                        Image(systemName: "pencil")
+                                    }
+                                    .buttonStyle(.borderless)
                                 }
-                                Spacer()
-                                Button {
-                                    viewModel.editMeter(meter)
-                                    serialNumber = meter.serialNumber
-                                    location = meter.location
-                                    isInputActive = true
-                                } label: {
-                                    Image(systemName: "pencil")
-                                }
-                                .buttonStyle(.borderless)
                             }
+                            .onDelete(perform: viewModel.deleteMeters)
                         }
-                        .onDelete(perform: viewModel.deleteMeters)
+                        .listStyle(.plain)
                     }
-                    .listStyle(.plain)
-                }
-                
-                Divider()
-                
-                VStack(spacing: 12) {
-                    Text(viewModel.isEditing ? "Редактировать счетчик" : "Добавить счетчик")
-                        .font(.title2)
-                        .bold()
                     
-                    TextField("Локация (например, ванная, кухня)", text: $location)
-                        .textFieldStyle(.roundedBorder)
-                        .focused($isInputActive)
+                    Divider()
                     
-                    TextField("Серийный номер", text: $serialNumber)
-                        .textFieldStyle(.roundedBorder)
-                        .focused($isInputActive)
-                    
-                    Button {
-                        guard !serialNumber.isEmpty, !location.isEmpty else {
-                            // Можно показать алерт или ошибку
-                            return
-                        }
+                    VStack(spacing: 12) {
+                        Text(viewModel.isEditing ? "Редактировать счетчик" : "Добавить счетчик")
+                            .font(.title2)
+                            .bold()
                         
-                        if viewModel.isEditing {
-                            if var editingMeter = viewModel.editingMeter {
-                                editingMeter.serialNumber = serialNumber
-                                editingMeter.location = location
+                        
+                        AuthorizationTextField(title: "Локация", placeholder: "ванная, кухня", text: $location)
+                            .focused($isInputActive)
+                        
+                        AuthorizationTextField(title: "Серийный номер", placeholder: "лицевой счет", text: $serialNumber)
+                            .focused($isInputActive)
+                        
+                        
+                        Button {
+                            guard !serialNumber.isEmpty, !location.isEmpty else {
+                                // Можно показать алерт или ошибку
+                                return
+                            }
+                            
+                            if viewModel.isEditing {
+                                if var editingMeter = viewModel.editingMeter {
+                                    editingMeter.serialNumber = serialNumber
+                                    editingMeter.location = location
+                                    Task {
+                                        await viewModel.saveMeter(number: serialNumber, address: location)
+                                        clearForm()
+                                    }
+                                }
+                            } else {
                                 Task {
                                     await viewModel.saveMeter(number: serialNumber, address: location)
                                     clearForm()
                                 }
                             }
-                        } else {
-                            Task {
-                                await viewModel.saveMeter(number: serialNumber, address: location)
-                                clearForm()
-                            }
+                        } label: {
+                            Text(viewModel.isEditing ? "Сохранить изменения" : "Добавить счетчик")
+                                .font(.SFPro.medium18)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 16)
+                                .frame(width: 360, height: 56)
+                                .background(Color.black.opacity(0.6))
+                                .background(.ultraThinMaterial)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .stroke(Color.white.opacity(0.8), lineWidth: 0.1)
+                                )
+                                .cornerRadius(4)
+                                .shadow(color: Color.white.opacity(0.5), radius: 16)
                         }
-                    } label: {
-                        Text(viewModel.isEditing ? "Сохранить изменения" : "Добавить счетчик")
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.blue.cornerRadius(10))
-                            .foregroundColor(.white)
                     }
+                    .padding()
                 }
-                .padding()
+                .navigationTitle("Счетчики горячей воды")
+                .toolbar {
+                    EditButton()
+                }
+                .onAppear {
+                    //                Task {
+                    //                    if let userId = authVM.appUser?.accountNumber {
+                    //                        await viewModel.fetchMeters(for: userId)
+                    //                    }
+                    //
+                    //                }
+                }
+                
+                
             }
-            .navigationTitle("Счетчики горячей воды")
-            .toolbar {
-                EditButton()
-            }
-            .onAppear {
-//                Task {
-//                    if let userId = authVM.appUser?.accountNumber {
-//                        await viewModel.fetchMeters(for: userId)
-//                    }
-//
-//                }
-            }
-
-            
         }
     }
     
@@ -125,6 +137,7 @@ struct MetersView: View {
         viewModel.editingMeter = nil
         isInputActive = false
     }
+        
 }
 
 struct AddEditMeterView: View {

@@ -8,7 +8,7 @@
 import Foundation
 import SwiftUI
 
-class IAPViewModel: ObservableObject {
+
    // private var offerings: Offerings?
    // private var config = Config.shared
   /*  @Published private(set) var error = ""
@@ -178,11 +178,48 @@ class IAPViewModel: ObservableObject {
     }
    */
 
-}
+
 
 extension Double {
     func rounded(toPlaces places: Int) -> Double {
         let divisor = pow(10.0, Double(places))
         return (self * divisor).rounded() / divisor
+    }
+}
+
+import StoreKit
+
+@MainActor
+class IAPViewModel: ObservableObject {
+    @Published var products: [Product] = []
+    @Published var balance: Double = 0.0
+    
+    func loadProducts() async {
+        do {
+            let storeProducts = try await Product.products(for: ["your.product.id1", "your.product.id2"])
+            self.products = storeProducts
+        } catch {
+            print("Failed to load products: \(error)")
+        }
+    }
+    
+    
+    func purchase(_ product: Product) async throws {
+        let result = try await product.purchase()
+        switch result {
+        case .success(let verificationResult):
+            switch verificationResult {
+            case .verified(let transaction):
+                // Обработай успешный платеж (увеличь баланс)
+                balance += 128
+                await transaction.finish()
+            case .unverified(_, let error):
+                throw error
+            }
+        case .userCancelled, .pending:
+            break // можно игнорировать
+        @unknown default:
+            break
+        }
     }
 }

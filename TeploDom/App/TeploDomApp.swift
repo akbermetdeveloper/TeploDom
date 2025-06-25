@@ -25,7 +25,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     }
 
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-        Auth.auth().setAPNSToken(deviceToken, type: .unknown) // .prod или .sandbox в зависимости от сборки
+        Auth.auth().setAPNSToken(deviceToken, type: .sandbox)
     }
 
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
@@ -61,23 +61,17 @@ struct TeploDomApp: App {
                 .onAppear {
                     handleSplashScreenAppearance()
                 }
-        } else if showSubview {
-            SubView(subViewModel: subViewModel, showSubview: $showSubview)
         } else {
-            mainNavigationView
-        }
-    }
-
-    @ViewBuilder
-    private var mainNavigationView: some View {
-        NavigationStack {
             switch authViewModel.authState {
-            case .enterAccountNumber, .enterPassword:
-                SignInWithAccountView()
-            case .signedIn:
-                MainTabContainer(subViewModel: SubViewModel())
+            case .undefined:
+                SignInSheetView()
             case .signedOut:
-                SignInWithAccountView()
+                SignInSheetView()
+            case .signedIn:
+                MainTabContainer(subViewModel: subViewModel)
+                    .environmentObject(authViewModel)
+                       .environmentObject(iapViewModel)
+                       .environmentObject(subViewModel)
             }
         }
     }
@@ -90,11 +84,6 @@ struct TeploDomApp: App {
             withAnimation {
                 showSplashScreen = false
             }
-
-            // Пример логики подписки:
-            // if iapViewModel.subscriptionEndDate < Date() {
-            //     showSubview = true
-            // }
         }
     }
 }

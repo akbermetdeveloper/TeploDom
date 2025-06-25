@@ -19,41 +19,59 @@ struct AuthView: View {
     var onAuthSuccess: (String) -> Void
 
     var body: some View {
-        
-        VStack(spacing: 20) {
-            
-            Text("Добавить аккаунт")
-                .font(.title)
-                .bold()
-            
-            TextField("Лицевой счёт", text: $accountNumber)
-                .textFieldStyle(.roundedBorder)
-            
-            SecureField("Пароль", text: $password)
-                .textFieldStyle(.roundedBorder)
-            
-            Button {
-                Task {
-                    let success = await authVM.signIn(accountNumber: accountNumber, password: password)
-                    if success {
-                        onAuthSuccess(accountNumber)
-                        dismiss()
+        ZStack {
+            BackgroundView()
+            VStack(spacing: 20) {
+                ScrollView {
+                    VStack(spacing: 24) {
+                        
+                        Text("Добавить аккаунт")
+                            .font(.SFPro.semiBold20)
+                            .foregroundColor(.white)
+                        
+                        AuthorizationTextField(title: "Лицевой счет", placeholder: "Введите лицевой счет", text: $accountNumber)
+                        
+                        AuthorizationTextField(title: "Пароль", placeholder: "Введите пароль", text: $password)
+                        
+                        
+                        
+                        Spacer()
+                        
+                        Button {
+                            Task {
+                                let success = await authVM.signIn(accountNumber: accountNumber, password: password)
+                                if success {
+                                    dismiss()
+                                    try? await Task.sleep(nanoseconds: 200_000_000)
+                                    onAuthSuccess(accountNumber)
+                                    
+                                }
+                            }
+                        } label: {
+                            Text("Войти")
+                                .font(.SFPro.semiBold20)
+                                .foregroundColor(Color(hex: "#A6C549"))
+                                .frame(width: 370, height: 54)
+                                .background(
+                                    Color.black.opacity(0.6)
+                                        .background(.ultraThinMaterial)
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .stroke(Color.white.opacity(1.1), lineWidth: 0.1)
+                                )
+                                .cornerRadius(4)
+                                .shadow(color: Color.white.opacity(0.4), radius: 10)
+                        }
+                    }
+                    
+                    if let error = authVM.errorMessage {
+                        Text(error)
+                            .foregroundColor(.red)
                     }
                 }
-            } label: {
-                Text("Войти")
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-            }
-
-            if let error = authVM.errorMessage {
-                Text(error)
-                    .foregroundColor(.red)
+                .padding()
             }
         }
-        .padding()
     }
 }

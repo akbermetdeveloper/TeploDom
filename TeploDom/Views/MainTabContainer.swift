@@ -85,13 +85,9 @@ struct MainTabContainer: View {
             .ignoresSafeArea()
             
             CustomTabBarView(selectedTab: $selectedTab)
-                .padding(.bottom, 10)
+                .padding(.bottom, -20)
               .zIndex(1)
-            
-            
-            
         }
-        
       }
     
     @ViewBuilder
@@ -122,15 +118,17 @@ struct MainTabContainer: View {
 
     @ViewBuilder
     private var consumptionsView: some View {
-        CustomSlideView(dragEnabled: true) {
+  
             ConsumptionsView(
-                viewModel: consumptionViewModel,
-                selectedTab: $selectedTab,
+                viewModel: readingsViewModel,
+                meterVM: metersViewModel, selectedTab: $selectedTab,
                 subViewModel: subViewModel
             )
             .environmentObject(authVM)
+            
             // .environmentObject(iapViewModel)
-        }
+        
+      //  .environmentObject(authVM)
     }
     
 

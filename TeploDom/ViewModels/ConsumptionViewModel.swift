@@ -60,8 +60,8 @@ final class ConsumptionViewModel: NSObject, ObservableObject {
                         meterId: meterId,
                         location: meter.location,
                         type: meter.type,
-                        previousValue: first.value,
-                        currentValue: last.value,
+                        previousValue: first.valueDouble,
+                        currentValue: last.valueDouble,
                         pricePerUnit: pricePerUnit
                     )
                     results.append(consumption)

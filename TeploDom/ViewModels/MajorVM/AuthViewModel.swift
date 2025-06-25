@@ -107,27 +107,54 @@ import SwiftUI
 import FirebaseFirestore
 import FirebaseFirestoreSwift
 
+enum AuthState {
+    case undefined // - Начальное состояние
+    case signedIn
+    case signedOut
+}
+
 @MainActor
 class AuthViewModel: ObservableObject {
-
-    enum AuthState {
-        case enterAccountNumber
-        case enterPassword
-        case signedIn
-        case signedOut
-    }
-
-    @Published var authState: AuthState = .enterAccountNumber
+    
+    @Published var authState: AuthState = .undefined
+    
     @Published var isAuthenticated: Bool = false
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
-    @Published var appUser: User? 
-
+    @Published var appUser: User?
+    
+    @Published var meter: Meter?
+    @Published var reading: Reading?
+    
     private let db = Firestore.firestore()
     private let sessionKey = "currentAccountNumber"
-
+    private let passwordKey = "currentAccountPassword"
+    
+    @Published var readings: [Reading] = []
+    
     init() {
         Task { await restoreSession() }
+    }
+    
+    // MARK: - Расходы
+    
+    func fetchReadings() async {
+        guard let userID = appUser?.id else { return }
+        
+        do {
+            let snapshot = try await db.collection("users")
+                .document(userID)
+                .collection("readings")
+                .order(by: "date", descending: true)
+                .getDocuments()
+            
+            readings = snapshot.documents.compactMap { doc in
+                try? doc.data(as: Reading.self)
+                
+            }
+        } catch {
+            print("Ошибка загрузки расходов: \(error.localizedDescription)")
+        }
     }
 
     // MARK: - Вход
@@ -136,6 +163,7 @@ class AuthViewModel: ObservableObject {
             errorMessage = "Введите лицевой счёт и пароль"
             return false
         }
+        
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
@@ -156,39 +184,40 @@ class AuthViewModel: ObservableObject {
                 // Успешный вход
                 appUser = user
                 authState = .signedIn
-                isAuthenticated = true
-                saveSession(accountNumber: accountNumber)
+                //isAuthenticated = true
+                saveSession(accountNumber: accountNumber, password: password)
                 return true
             } else {
                 errorMessage = "Неверный пароль"
+                authState = .signedOut
                 return false
             }
 
         } catch {
             errorMessage = "Ошибка базы данных: \(error.localizedDescription)"
+            authState = .signedOut
             return false
         }
     }
 
     // MARK: - Сохранение сессии
-    private func saveSession(accountNumber: String) {
+    private func saveSession(accountNumber: String, password: String) {
         UserDefaults.standard.set(accountNumber, forKey: sessionKey)
+        UserDefaults.standard.set(password, forKey: passwordKey)
     }
 
     // MARK: - Восстановление сессии
     func restoreSession() async {
-        if let accountNumber = UserDefaults.standard.string(forKey: sessionKey) {
-            // загружаем профиль
-            _ = await signIn(accountNumber: accountNumber, password: userDefaultsPassword())
-        } else {
-            authState = .enterAccountNumber
-            isAuthenticated = false
+        guard let accountNumber = UserDefaults.standard.string(forKey: sessionKey),
+              let password = UserDefaults.standard.string(forKey: passwordKey) else {
+            authState = .signedOut
+            return
         }
-    }
-
-    private func userDefaultsPassword() -> String {
-        // можно хранить хэш пароля или всегда запрашивать заново
-        return UserDefaults.standard.string(forKey: "\(sessionKey)_password") ?? ""
+        let success = await signIn(accountNumber: accountNumber, password: password)
+        if !success {
+            authState = .signedOut
+        }
+        
     }
 
     // MARK: - Обновление профиля
@@ -206,10 +235,10 @@ class AuthViewModel: ObservableObject {
 
     // MARK: - Выход
     func signOut() {
-        isAuthenticated = false
         authState = .signedOut
-        errorMessage = nil
         appUser = nil
+        errorMessage = nil
         UserDefaults.standard.removeObject(forKey: sessionKey)
+        UserDefaults.standard.removeObject(forKey: passwordKey)
     }
 }
